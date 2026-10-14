@@ -30,6 +30,9 @@ namespace SentisRender.Client
             public ShapeData Data;
             public DateTime? Until;
             public MatrixD Matrix;
+            /// <summary>The color as sent (for the HUD marker).</summary>
+            public Color Straight;
+            /// <summary>Premultiplied by its alpha, as the transparent geometry wants it.</summary>
             public Color Color;
             public Vector4 Color4;
             public MyStringId Face;
@@ -130,7 +133,12 @@ namespace SentisRender.Client
             }
             live.Data = d;
             live.Until = d.LifetimeMs > 0 ? DateTime.UtcNow.AddMilliseconds(d.LifetimeMs) : (DateTime?)null;
-            live.Color = RenderNet.Unpack(d.Color);
+            // the game blends transparent faces and lines as premultiplied: color channels times alpha, or an alpha of
+            // 80 still draws the color at full strength (an all but opaque sphere)
+            var straight = RenderNet.Unpack(d.Color);
+            var alpha = straight.A / 255f;
+            live.Straight = straight;
+            live.Color = new Color((int)(straight.R * alpha), (int)(straight.G * alpha), (int)(straight.B * alpha), straight.A);
             live.Color4 = live.Color.ToVector4() * (d.Intensity > 0 ? d.Intensity : 1f);
             var custom = string.IsNullOrEmpty(d.Material) ? MyStringId.NullOrEmpty : MyStringId.GetOrCompute(d.Material);
             live.Face = custom != MyStringId.NullOrEmpty ? custom : FaceDefault;
@@ -179,10 +187,10 @@ namespace SentisRender.Client
             var d = live.Data;
             var name = d.Text ?? "";
             var gps = live.Gps;
-            if (gps != null && gps.Name == name && gps.Coords == d.Position && gps.GPSColor == live.Color) return;
+            if (gps != null && gps.Name == name && gps.Coords == d.Position && gps.GPSColor == live.Straight) return;
             if (gps != null) RemoveMarker(live);
             gps = MyAPIGateway.Session.GPS.Create(name, "", d.Position, true, true);
-            gps.GPSColor = live.Color;
+            gps.GPSColor = live.Straight;
             MyAPIGateway.Session.GPS.AddLocalGps(gps);
             live.Gps = gps;
         }

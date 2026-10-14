@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
 using SentisRender.Net;
 using Torch.Commands;
 using Torch.Commands.Permissions;
@@ -9,13 +11,32 @@ using VRageMath;
 namespace SentisRender.Commands
 {
     /// <summary>
-    /// !render - draws test shapes around the admin who types it (ids "test:..."), to see the client mod at work.
+    /// !render - draws test shapes around the admin who types it, each a new one ("test:sphere:1", "test:box:2", ...),
+    /// to see the client mod at work.
     /// Colors: a name (green, red, gray, white, blue, yellow, cyan, orange, purple) or #RRGGBB / #RRGGBBAA.
     /// </summary>
     [Category("render")]
     public class RenderCommands : CommandModule
     {
         private const string Prefix = "test:";
+        private static int _next;
+        private static readonly Dictionary<string, string> Last = new Dictionary<string, string>();
+
+        /// <summary>Every command draws a shape of its own: test:sphere:1, test:sphere:2, ...</summary>
+        private static string NewId(string kind)
+        {
+            var id = Prefix + kind + ":" + Interlocked.Increment(ref _next);
+            lock (Last) Last[kind] = id;
+            return id;
+        }
+
+        /// <summary>A shape's id as given, without "test:", or a kind ("sphere": the last sphere drawn).</summary>
+        private static string Resolve(string id)
+        {
+            if (Render.Exists(id)) return id;
+            if (Render.Exists(Prefix + id)) return Prefix + id;
+            lock (Last) return Last.TryGetValue(id, out var last) ? last : id;
+        }
 
         [Command("status", "Shapes, clients with the mod, what was sent.")]
         [Permission(MyPromoteLevel.Admin)]
@@ -31,8 +52,9 @@ namespace SentisRender.Commands
         public void Sphere(float radius = 50, string color = "green", string style = "solid", int alpha = 80)
         {
             if (!Here(out var at, out _, out _)) return;
-            Render.Sphere(Prefix + "sphere", at, radius, Paint(color, alpha), StyleOf(style));
-            Context.Respond($"Sphere of {radius} m at you.");
+            var id = NewId("sphere");
+            Render.Sphere(id, at, radius, Paint(color, alpha), StyleOf(style));
+            Context.Respond($"{id}: sphere of {radius} m at you.");
         }
 
         [Command("box", "!render box [half size=10] [color=cyan] [solid|wire|both] [alpha=80]: a box around you, turned like you.")]
@@ -40,8 +62,9 @@ namespace SentisRender.Commands
         public void Box(float half = 10, string color = "cyan", string style = "wire", int alpha = 80)
         {
             if (!Here(out var at, out var forward, out var up)) return;
-            Render.Box(Prefix + "box", at, new Vector3(half), Paint(color, alpha), StyleOf(style), forward, up);
-            Context.Respond($"Box of {half * 2} m at you.");
+            var id = NewId("box");
+            Render.Box(id, at, new Vector3(half), Paint(color, alpha), StyleOf(style), forward, up);
+            Context.Respond($"{id}: box of {half * 2} m at you.");
         }
 
         [Command("cylinder", "!render cylinder [length=50] [radius=5] [color=yellow]: a wire cylinder up from you.")]
@@ -49,8 +72,9 @@ namespace SentisRender.Commands
         public void Cylinder(float length = 50, float radius = 5, string color = "yellow")
         {
             if (!Here(out var at, out _, out var up)) return;
-            Render.Cylinder(Prefix + "cylinder", at, at + (Vector3D)up * length, radius, Paint(color, 255));
-            Context.Respond($"Cylinder of {length} m up from you.");
+            var id = NewId("cylinder");
+            Render.Cylinder(id, at, at + (Vector3D)up * length, radius, Paint(color, 255));
+            Context.Respond($"{id}: cylinder of {length} m up from you.");
         }
 
         [Command("capsule", "!render capsule [length=20] [radius=3] [color=purple] [alpha=100]: a capsule up from you.")]
@@ -58,8 +82,9 @@ namespace SentisRender.Commands
         public void Capsule(float length = 20, float radius = 3, string color = "purple", int alpha = 100)
         {
             if (!Here(out var at, out _, out var up)) return;
-            Render.Capsule(Prefix + "capsule", at, at + (Vector3D)up * length, radius, Paint(color, alpha));
-            Context.Respond($"Capsule of {length} m up from you.");
+            var id = NewId("capsule");
+            Render.Capsule(id, at, at + (Vector3D)up * length, radius, Paint(color, alpha));
+            Context.Respond($"{id}: capsule of {length} m up from you.");
         }
 
         [Command("beam", "!render beam [length=200] [color=red] [thickness=0.3] [seconds=0]: a laser where you look (seconds: its lifetime, 0 stays).")]
@@ -68,9 +93,10 @@ namespace SentisRender.Commands
         {
             if (!Here(out var at, out var forward, out _)) return;
             var from = at + (Vector3D)forward * 2;
-            var beam = Render.Line(Prefix + "beam", from, from + (Vector3D)forward * length, Paint(color, 255), thickness).Additive();
+            var id = NewId("beam");
+            var beam = Render.Line(id, from, from + (Vector3D)forward * length, Paint(color, 255), thickness).Additive();
             if (seconds > 0) beam.Lifetime(TimeSpan.FromSeconds(seconds));
-            Context.Respond($"Beam of {length} m where you look.");
+            Context.Respond($"{id}: beam of {length} m where you look.");
         }
 
         [Command("point", "!render point [radius=2] [color=white] [distance=20]: a glowing point in front of you.")]
@@ -78,8 +104,9 @@ namespace SentisRender.Commands
         public void Point(float radius = 2, string color = "white", float distance = 20)
         {
             if (!Here(out var at, out var forward, out _)) return;
-            Render.Point(Prefix + "point", at + (Vector3D)forward * distance, radius, Paint(color, 255)).Additive();
-            Context.Respond("Point in front of you.");
+            var id = NewId("point");
+            Render.Point(id, at + (Vector3D)forward * distance, radius, Paint(color, 255)).Additive();
+            Context.Respond($"{id}: point in front of you.");
         }
 
         [Command("marker", "!render marker [text=Marker] [color=orange]: a HUD marker where you stand.")]
@@ -87,15 +114,16 @@ namespace SentisRender.Commands
         public void Marker(string text = "Marker", string color = "orange")
         {
             if (!Here(out var at, out _, out _)) return;
-            Render.Marker(Prefix + "marker", at, text, Paint(color, 255));
-            Context.Respond("Marker where you stand.");
+            var id = NewId("marker");
+            Render.Marker(id, at, text, Paint(color, 255));
+            Context.Respond($"{id}: marker where you stand.");
         }
 
-        [Command("color", "!render color <id> <color> [alpha=80]: recolors a shape (ids: !render status).")]
+        [Command("color", "!render color <id|kind> <color> [alpha=80]: recolors a shape; a kind (sphere, box, ...) is the last one of it drawn.")]
         [Permission(MyPromoteLevel.Admin)]
         public void Recolor(string id, string color, int alpha = 80)
         {
-            if (!Render.Exists(id) && Render.Exists(Prefix + id)) id = Prefix + id;
+            id = Resolve(id);
             Context.Respond(Render.Exists(id) ? "Recolored " + id + "." : "No shape " + id + ".");
             Render.Shape(id).Color(Paint(color, alpha));
         }
