@@ -29,7 +29,14 @@ namespace SentisRender.Client
         {
             public ShapeData Data;
             public DateTime? Until;
+            /// <summary>Where and how the shape stands as sent; Matrix is it turned by the spin at this frame.</summary>
+            public MatrixD BaseMatrix;
             public MatrixD Matrix;
+            public Vector3D SpinAxis;
+            public double SpinRadians;
+            public DateTime SpinFrom;
+            public Vector3 BaseDirection;
+            public Vector3D LineStart;
             /// <summary>The color as sent (for the HUD marker).</summary>
             public Color Straight;
             /// <summary>Premultiplied by its alpha, as the transparent geometry wants it.</summary>
@@ -179,11 +186,7 @@ namespace SentisRender.Client
             switch (d.Kind)
             {
                 case ShapeKind.Box:
-                    var forward = d.Forward;
-                    var up = d.Up;
-                    live.Matrix = forward.LengthSquared() > 0 && up.LengthSquared() > 0
-                        ? MatrixD.CreateWorld(position, forward, up)
-                        : MatrixD.CreateTranslation(position);
+                    live.Matrix = Oriented(d, position);
                     live.Center = position;
                     live.Reach = d.Size.Length();
                     break;
@@ -200,14 +203,53 @@ namespace SentisRender.Client
                     live.Reach = length * 0.5 + d.Radius;
                     break;
                 default:
-                    live.Matrix = MatrixD.CreateTranslation(position);
+                    live.Matrix = Oriented(d, position);
                     live.Center = position;
                     live.Reach = d.Radius;
                     break;
             }
+            live.BaseMatrix = live.Matrix;
+            live.BaseDirection = live.Direction;
+            live.LineStart = position;
+
+            // a spin that did not change keeps its phase: a shape sent again (a new color) does not jump
+            var speed = MathHelper.ToRadians((double)d.SpinSpeed);
+            var spinAxis = (Vector3D)d.SpinAxis;
+            spinAxis = spinAxis.LengthSquared() > 1e-12 ? Vector3D.Normalize(spinAxis) : live.BaseMatrix.Up;
+            if (speed != live.SpinRadians || spinAxis != live.SpinAxis) live.SpinFrom = DateTime.UtcNow;
+            live.SpinRadians = speed;
+            live.SpinAxis = spinAxis;
 
             if (d.Kind == ShapeKind.Marker) SetMarker(live);
             else if (live.Gps != null) RemoveMarker(live);
+        }
+
+        /// <summary>At the position, turned by the shape's forward/up when it has them.</summary>
+        private static MatrixD Oriented(ShapeData d, Vector3D position)
+        {
+            var forward = d.Forward;
+            var up = d.Up;
+            return forward.LengthSquared() > 0 && up.LengthSquared() > 0
+                ? MatrixD.CreateWorld(position, forward, up)
+                : MatrixD.CreateTranslation(position);
+        }
+
+        /// <summary>Turns the shape about its center by its spin for this frame.</summary>
+        private static void Turn(Live live, DateTime now)
+        {
+            if (live.SpinRadians == 0) return;
+            var angle = live.SpinRadians * (now - live.SpinFrom).TotalSeconds % (2 * Math.PI);
+            var rotation = MatrixD.CreateFromAxisAngle(live.SpinAxis, angle);
+            var turned = live.BaseMatrix;
+            turned.Translation = Vector3D.Zero;
+            turned = turned * rotation;
+            turned.Translation = live.Center;
+            live.Matrix = turned;
+            if (live.Data.Kind == ShapeKind.Line)
+            {
+                live.Direction = (Vector3)Vector3D.TransformNormal((Vector3D)live.BaseDirection, rotation);
+                live.LineStart = live.Center - (Vector3D)live.Direction * (live.Length * 0.5);
+            }
         }
 
         private void SetMarker(Live live)
@@ -300,6 +342,7 @@ namespace SentisRender.Client
                 if (d.DrawDistance > 0 && Vector3D.Distance(eye, live.Center) - live.Reach > d.DrawDistance) continue;
                 try
                 {
+                    Turn(live, now);
                     DrawOne(live);
                 }
                 catch (Exception e)
@@ -380,7 +423,7 @@ namespace SentisRender.Client
                         Segments(d.Detail, 12), live.Face, -1, blend);
                     break;
                 case ShapeKind.Line:
-                    MyTransparentGeometry.AddLineBillboard(live.Wire, live.Color4, d.Position, live.Direction, live.Length,
+                    MyTransparentGeometry.AddLineBillboard(live.Wire, live.Color4, live.LineStart, live.Direction, live.Length,
                         d.Thickness > 0 ? d.Thickness : 0.1f, blend, -1, intensity);
                     break;
                 case ShapeKind.Point:

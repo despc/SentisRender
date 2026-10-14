@@ -116,7 +116,15 @@ namespace SentisRender
         public ShapeHandle To(Vector3D to) => Change(d => d.To = to);
         public ShapeHandle Radius(float radius) => Change(d => d.Radius = radius);
         public ShapeHandle HalfSize(Vector3 halfSize) => Change(d => d.Size = halfSize);
+        /// <summary>Turns a sphere, a box or a point (a cylinder, a capsule and a line stand along from-to).</summary>
         public ShapeHandle Orientation(Vector3 forward, Vector3 up) => Change(d => { d.Forward = forward; d.Up = up; });
+        /// <summary>
+        /// The shape turns about an axis through its center, <paramref name="degreesPerSecond"/> (negative: the other
+        /// way; 0 stops it). No axis: the shape's own up (a cylinder, a capsule or a line: its from-to). The client turns
+        /// it every frame, nothing more is sent; each client starts the turn when it gets the shape.
+        /// </summary>
+        public ShapeHandle Spin(float degreesPerSecond, Vector3? axis = null) =>
+            Change(d => { d.SpinSpeed = degreesPerSecond; d.SpinAxis = axis ?? Vector3.Zero; });
         public ShapeHandle Text(string text) => Change(d => d.Text = text);
         public ShapeHandle Style(ShapeStyle style) => Change(d => d.Style = style);
         /// <summary>Width of a line or of a wire, metres; 0 is the client's default.</summary>

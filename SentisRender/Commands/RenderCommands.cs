@@ -129,6 +129,35 @@ namespace SentisRender.Commands
             Render.Shape(id).Color(Paint(color, alpha));
         }
 
+        [Command("spin", "!render spin <id|kind> <degrees a second> [x y z of the axis, 0 0 0: the shape's own up]: turns a shape (0 stops it).")]
+        [Permission(MyPromoteLevel.Admin)]
+        public void Spin(string id, float degreesPerSecond, float x = 0, float y = 0, float z = 0)
+        {
+            id = Resolve(id);
+            if (!Render.Exists(id))
+            {
+                Context.Respond("No shape " + id + ".");
+                return;
+            }
+            var axis = new Vector3(x, y, z);
+            Render.Shape(id).Spin(degreesPerSecond, axis.LengthSquared() > 0 ? axis : (Vector3?)null);
+            Context.Respond($"{id}: {degreesPerSecond} degrees a second.");
+        }
+
+        [Command("turn", "!render turn <id|kind>: stands a sphere, a box or a point the way you look.")]
+        [Permission(MyPromoteLevel.Admin)]
+        public void Turn(string id)
+        {
+            id = Resolve(id);
+            if (!Render.Exists(id) || !Here(out _, out var forward, out var up))
+            {
+                if (!Render.Exists(id)) Context.Respond("No shape " + id + ".");
+                return;
+            }
+            Render.Shape(id).Orientation(forward, up);
+            Context.Respond($"{id}: turned the way you look.");
+        }
+
         [Command("notify", "!render notify <text> [ms=3000] [font=White] [all]: a line on your screen (all: on everyone's).")]
         [Permission(MyPromoteLevel.Admin)]
         public void Notify(string text, int ms = 3000, string font = "White", string who = "")

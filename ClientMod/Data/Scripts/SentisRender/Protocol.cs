@@ -40,7 +40,7 @@ namespace SentisRender.Net
         None = 0,
         /// <summary>A sphere at Position with Radius.</summary>
         Sphere = 1,
-        /// <summary>A box at Position, half extents Size, turned by Forward/Up (zero: the world's axes).</summary>
+        /// <summary>A box at Position, half extents Size, turned by Forward/Up (zero: the world's axes; a sphere is turned too).</summary>
         Box = 2,
         /// <summary>A cylinder from Position to To with Radius (drawn as lines).</summary>
         Cylinder = 3,
@@ -119,6 +119,12 @@ namespace SentisRender.Net
         [ProtoMember(28)] public bool Additive;
         /// <summary>RenderNet.Pack of the wire's own color (a sphere or box drawn as wire, or solid and wire); 0 is Color.</summary>
         [ProtoMember(29)] public uint WireColor;
+        /// <summary>The axis the shape turns about, through its center (zero: the shape's own up).</summary>
+        [ProtoMember(30)] public float SpinX;
+        [ProtoMember(31)] public float SpinY;
+        [ProtoMember(32)] public float SpinZ;
+        /// <summary>Degrees a second the shape turns (the client turns it every frame, nothing is sent); 0 stands still.</summary>
+        [ProtoMember(33)] public float SpinSpeed;
 
         public Vector3D Position
         {
@@ -148,6 +154,12 @@ namespace SentisRender.Net
         {
             get { return new Vector3(UpX, UpY, UpZ); }
             set { UpX = value.X; UpY = value.Y; UpZ = value.Z; }
+        }
+
+        public Vector3 SpinAxis
+        {
+            get { return new Vector3(SpinX, SpinY, SpinZ); }
+            set { SpinX = value.X; SpinY = value.Y; SpinZ = value.Z; }
         }
     }
 
