@@ -34,6 +34,9 @@ namespace SentisRender.Client
             public Color Straight;
             /// <summary>Premultiplied by its alpha, as the transparent geometry wants it.</summary>
             public Color Color;
+            /// <summary>The wire's color, premultiplied; the same as Color unless the shape has one of its own.</summary>
+            public Color WireColor;
+            public bool OwnWireColor;
             public Vector4 Color4;
             public MyStringId Face;
             public MyStringId Wire;
@@ -110,6 +113,12 @@ namespace SentisRender.Client
             }
         }
 
+        private static Color Premultiplied(Color c)
+        {
+            var a = c.A / 255f;
+            return new Color((int)(c.R * a), (int)(c.G * a), (int)(c.B * a), c.A);
+        }
+
         private static long NewToken()
         {
             var token = BitConverter.ToInt64(Guid.NewGuid().ToByteArray(), 0);
@@ -157,6 +166,8 @@ namespace SentisRender.Client
             live.Straight = straight;
             live.Color = new Color((int)(straight.R * alpha), (int)(straight.G * alpha), (int)(straight.B * alpha), straight.A);
             live.Color4 = live.Color.ToVector4() * (d.Intensity > 0 ? d.Intensity : 1f);
+            live.OwnWireColor = d.WireColor != 0;
+            live.WireColor = live.OwnWireColor ? Premultiplied(RenderNet.Unpack(d.WireColor)) : live.Color;
             var custom = string.IsNullOrEmpty(d.Material) ? MyStringId.NullOrEmpty : MyStringId.GetOrCompute(d.Material);
             live.Face = custom != MyStringId.NullOrEmpty ? custom : FaceDefault;
             live.Wire = custom != MyStringId.NullOrEmpty ? custom
@@ -324,8 +335,19 @@ namespace SentisRender.Client
                 case ShapeKind.Sphere:
                 {
                     var thickness = d.Thickness > 0 ? d.Thickness : Math.Max(0.05f, d.Radius / 500f);
-                    MySimpleObjectDraw.DrawTransparentSphere(ref live.Matrix, d.Radius, ref live.Color, rasterizer,
-                        Segments(d.Detail, 20), live.Face, live.Wire, thickness, -1, null, blend, intensity);
+                    var segments = Segments(d.Detail, 20);
+                    if (live.OwnWireColor && rasterizer != MySimpleObjectRasterizer.Solid)
+                    {
+                        // the game draws a sphere's faces and wire in one color: two passes for two
+                        if (rasterizer == MySimpleObjectRasterizer.SolidAndWireframe)
+                            MySimpleObjectDraw.DrawTransparentSphere(ref live.Matrix, d.Radius, ref live.Color, MySimpleObjectRasterizer.Solid,
+                                segments, live.Face, live.Wire, thickness, -1, null, blend, intensity);
+                        MySimpleObjectDraw.DrawTransparentSphere(ref live.Matrix, d.Radius, ref live.WireColor, MySimpleObjectRasterizer.Wireframe,
+                            segments, live.Face, live.Wire, thickness, -1, null, blend, intensity);
+                    }
+                    else
+                        MySimpleObjectDraw.DrawTransparentSphere(ref live.Matrix, d.Radius, ref live.Color, rasterizer,
+                            segments, live.Face, live.Wire, thickness, -1, null, blend, intensity);
                     break;
                 }
                 case ShapeKind.Box:
@@ -333,8 +355,17 @@ namespace SentisRender.Client
                     var size = d.Size;
                     var box = new BoundingBoxD(-size, size);
                     var thickness = d.Thickness > 0 ? d.Thickness : Math.Max(0.02f, size.AbsMax() / 200f);
-                    MySimpleObjectDraw.DrawTransparentBox(ref live.Matrix, ref box, ref live.Color, rasterizer, 1, thickness,
-                        live.Face, live.Wire, false, -1, blend, intensity);
+                    if (live.OwnWireColor && rasterizer != MySimpleObjectRasterizer.Solid)
+                    {
+                        if (rasterizer == MySimpleObjectRasterizer.SolidAndWireframe)
+                            MySimpleObjectDraw.DrawTransparentBox(ref live.Matrix, ref box, ref live.Color, MySimpleObjectRasterizer.Solid, 1,
+                                thickness, live.Face, live.Wire, false, -1, blend, intensity);
+                        MySimpleObjectDraw.DrawTransparentBox(ref live.Matrix, ref box, ref live.WireColor, MySimpleObjectRasterizer.Wireframe, 1,
+                            thickness, live.Face, live.Wire, false, -1, blend, intensity);
+                    }
+                    else
+                        MySimpleObjectDraw.DrawTransparentBox(ref live.Matrix, ref box, ref live.Color, rasterizer, 1, thickness,
+                            live.Face, live.Wire, false, -1, blend, intensity);
                     break;
                 }
                 case ShapeKind.Cylinder:

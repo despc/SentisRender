@@ -107,6 +107,11 @@ namespace SentisRender
         }
 
         public ShapeHandle Color(Color color) => Change(d => d.Color = RenderNet.Pack(color));
+        /// <summary>
+        /// The wire's own color of a sphere or a box drawn as wire or solid and wire (an opaque edge on a see-through
+        /// sphere); null: the shape's color. Its own color draws the shape in two passes.
+        /// </summary>
+        public ShapeHandle WireColor(Color? color) => Change(d => d.WireColor = color.HasValue ? Math.Max(1u, RenderNet.Pack(color.Value)) : 0);
         public ShapeHandle Position(Vector3D position) => Change(d => d.Position = position);
         public ShapeHandle To(Vector3D to) => Change(d => d.To = to);
         public ShapeHandle Radius(float radius) => Change(d => d.Radius = radius);

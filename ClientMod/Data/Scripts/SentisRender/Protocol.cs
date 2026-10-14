@@ -117,6 +117,8 @@ namespace SentisRender.Net
         [ProtoMember(27)] public float Intensity;
         /// <summary>Additive blending (glows, adds light) instead of the standard one.</summary>
         [ProtoMember(28)] public bool Additive;
+        /// <summary>RenderNet.Pack of the wire's own color (a sphere or box drawn as wire, or solid and wire); 0 is Color.</summary>
+        [ProtoMember(29)] public uint WireColor;
 
         public Vector3D Position
         {

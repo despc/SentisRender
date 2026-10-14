@@ -47,13 +47,14 @@ namespace SentisRender.Commands
             if (ids.Count > 0) Context.Respond("Ids: " + string.Join(", ", ids.Count > 30 ? ids.GetRange(0, 30) : ids) + (ids.Count > 30 ? ", ..." : ""));
         }
 
-        [Command("sphere", "!render sphere [radius=50] [color=green] [solid|wire|both] [alpha=80] [segments=0] [thickness=0]: a sphere around you (segments 4..90, 0: 20; thickness of the wire in metres, 0: radius / 500).")]
+        [Command("sphere", "!render sphere [radius=50] [color=green] [solid|wire|both] [alpha=80] [segments=0] [thickness=0] [wire alpha=0]: a sphere around you (segments 4..90, 0: 20; thickness of the wire in metres, 0: radius / 500; wire alpha: the wire's own, 0: the sphere's).")]
         [Permission(MyPromoteLevel.Admin)]
-        public void Sphere(float radius = 50, string color = "green", string style = "solid", int alpha = 80, int segments = 0, float thickness = 0)
+        public void Sphere(float radius = 50, string color = "green", string style = "solid", int alpha = 80, int segments = 0, float thickness = 0, int wireAlpha = 0)
         {
             if (!Here(out var at, out _, out _)) return;
             var id = NewId("sphere");
-            Render.Sphere(id, at, radius, Paint(color, alpha), StyleOf(style)).Detail(segments).Thickness(thickness);
+            Render.Sphere(id, at, radius, Paint(color, alpha), StyleOf(style)).Detail(segments).Thickness(thickness)
+                .WireColor(wireAlpha > 0 ? Paint(color, wireAlpha) : (Color?)null);
             Context.Respond($"{id}: sphere of {radius} m at you.");
         }
 
