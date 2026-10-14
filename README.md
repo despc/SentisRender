@@ -56,7 +56,7 @@
 | Команда | Что делает |
 |---|---|
 | `!render status` | сколько фигур, сколько клиентов с модом, сколько отправлено; список ids |
-| `!render sphere [радиус=50] [цвет=green] [solid\|wire\|both] [прозрачность=80] [деления=0]` | сфера вокруг вас; деления 4..90, 0 — 20 |
+| `!render sphere [радиус=50] [цвет=green] [solid\|wire\|both] [прозрачность=80] [деления=0] [толщина=0]` | сфера вокруг вас; деления 4..90, 0 — 20; толщина рёбер каркаса в метрах, 0 — радиус / 500 (не меньше 5 см) |
 | `!render box [полуразмер=10] [цвет=cyan] [solid\|wire\|both] [прозрачность=80]` | куб вокруг вас, повёрнут как вы |
 | `!render cylinder [длина=50] [радиус=5] [цвет=yellow]` | цилиндр из линий вверх от вас |
 | `!render capsule [длина=20] [радиус=3] [цвет=purple] [прозрачность=100]` | капсула вверх от вас |
@@ -101,7 +101,7 @@ Render.Clear("zone:");
 
 - **Фигуры:** `Sphere`, `Box`, `Cylinder`, `Capsule`, `Line`, `Point`, `Marker`.
 - **Свойства:** `Color`, `Position`, `To`, `Radius`, `HalfSize`, `Orientation`, `Text`, `Style` (`Solid`, `Wire`,
-  `SolidAndWire`), `Thickness`, `Material` (прозрачный материал игры: `Square`, `WeaponLaser`,
+  `SolidAndWire`), `Thickness` (толщина линии или рёбер каркаса в метрах; 0 — у сферы радиус / 500, не меньше 5 см), `Material` (прозрачный материал игры: `Square`, `WeaponLaser`,
   `SafeZoneShield_Material`, `GizmoDrawLine`…), `DrawDistance`, `Detail` (деления сферы, капсулы, цилиндра: 4..90;
   сфера из n делений — около n²/2 полигонов за кадр, ровно выходят делители 360),  `Intensity`, `Additive`, `Lifetime`,
   `ShowTo`, `Remove`.
