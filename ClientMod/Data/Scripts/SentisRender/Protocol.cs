@@ -12,8 +12,9 @@ namespace SentisRender.Net
         /// <summary>The channel of RegisterSecureMessageHandler/SendMessageTo both sides use.</summary>
         public const ushort Channel = 47110;
 
-        /// <summary>Bumped when a change needs both sides updated; an older peer is logged, not refused.</summary>
-        public const int Version = 1;
+        /// <summary>Bumped when a change needs both sides updated; an older peer is logged, not refused.
+        /// 2: the session token (a mod of 2 drops the batches of a plugin of 1).</summary>
+        public const int Version = 2;
 
         /// <summary>
         /// The most segments a sphere, capsule or cylinder is drawn with: the game steps a sphere by 360 / n whole
@@ -65,6 +66,14 @@ namespace SentisRender.Net
     public class ClientHello
     {
         [ProtoMember(1)] public int Version;
+
+        /// <summary>
+        /// A random number the mod makes at its load and tells only the server (SendMessageToServer is not passed on to
+        /// anyone). The server puts it in every batch to this client, and the mod takes no batch without it: a client
+        /// that broadcasts on the channel (SendMessageToOthers, which the server relays to every other client as if
+        /// from itself, so fromServer is true) does not know it.
+        /// </summary>
+        [ProtoMember(2)] public long Token;
     }
 
     /// <summary>One thing to draw. The same Id again replaces it.</summary>
@@ -163,6 +172,8 @@ namespace SentisRender.Net
         [ProtoMember(4)] public List<string> ClearPrefixes;
         [ProtoMember(5)] public List<NoticeData> Notices;
         [ProtoMember(6)] public int Version;
+        /// <summary>The token of the client's hello: the batch is for it and from the server.</summary>
+        [ProtoMember(7)] public long Token;
 
         public bool IsEmpty
         {

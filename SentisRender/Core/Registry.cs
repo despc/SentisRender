@@ -36,6 +36,7 @@ namespace SentisRender
             public readonly Dictionary<string, long> Has = new Dictionary<string, long>(StringComparer.Ordinal);
             public bool NeedsReset = true;
             public int Version;
+            public long Token;
         }
 
         private readonly object _lock = new object();
@@ -192,14 +193,18 @@ namespace SentisRender
             }
         }
 
-        /// <summary>A client's mod is loaded: it gets everything it is to see from scratch.</summary>
-        public void Hello(ulong steamId, int version)
+        /// <summary>
+        /// A client's mod is loaded: it gets everything it is to see from scratch, every batch with its
+        /// <paramref name="token"/> (the mod takes nothing without it, see ClientHello.Token).
+        /// </summary>
+        public void Hello(ulong steamId, int version, long token)
         {
             lock (_lock)
             {
                 if (!_clients.TryGetValue(steamId, out var client)) _clients[steamId] = client = new ClientState();
                 client.NeedsReset = true;
                 client.Version = version;
+                client.Token = token;
                 _dirty = true;
             }
         }
@@ -260,7 +265,7 @@ namespace SentisRender
                 {
                     if (!viewers.TryGetValue(pair.Key, out var viewer)) continue;
                     var client = pair.Value;
-                    var first = new ServerBatch { Version = RenderNet.Version };
+                    var first = new ServerBatch { Version = RenderNet.Version, Token = client.Token };
                     if (client.NeedsReset)
                     {
                         first.Reset = true;
@@ -291,7 +296,7 @@ namespace SentisRender
                     var batch = first;
                     for (var i = 0; i < upserts.Count; i += MaxUpsertsPerBatch)
                     {
-                        if (batch == null) batch = new ServerBatch { Version = RenderNet.Version };
+                        if (batch == null) batch = new ServerBatch { Version = RenderNet.Version, Token = client.Token };
                         batch.Upserts = upserts.GetRange(i, Math.Min(MaxUpsertsPerBatch, upserts.Count - i));
                         result.Batches.Add(new KeyValuePair<ulong, ServerBatch>(pair.Key, batch));
                         batch = null;

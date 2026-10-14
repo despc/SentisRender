@@ -52,11 +52,14 @@ namespace SentisRender.Client
         private bool _answered;
         private int _helloIn = 60;
         private bool _drawFailed;
+        private long _token;
+        private bool _rejectLogged;
 
         public override void LoadData()
         {
             if (MyAPIGateway.Session == null || MyAPIGateway.Multiplayer == null || MyAPIGateway.Multiplayer.IsServer) return;
             _active = true;
+            _token = NewToken();
             _handler = OnMessage;
             MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(RenderNet.Channel, _handler);
         }
@@ -81,7 +84,7 @@ namespace SentisRender.Client
                 return;
             }
             _helloIn = HelloRetryFrames;
-            var hello = MyAPIGateway.Utilities.SerializeToBinary(new ClientHello { Version = RenderNet.Version });
+            var hello = MyAPIGateway.Utilities.SerializeToBinary(new ClientHello { Version = RenderNet.Version, Token = _token });
             MyAPIGateway.Multiplayer.SendMessageToServer(RenderNet.Channel, hello);
         }
 
@@ -91,12 +94,26 @@ namespace SentisRender.Client
             try
             {
                 var batch = MyAPIGateway.Utilities.SerializeFromBinary<ServerBatch>(data);
-                if (batch != null) Apply(batch);
+                if (batch == null) return;
+                if (batch.Token != _token)
+                {
+                    // not the server's answer to our hello: another client's broadcast, relayed by the server
+                    if (!_rejectLogged) MyLog.Default.WriteLine("SentisRender: a message without this session's token was dropped");
+                    _rejectLogged = true;
+                    return;
+                }
+                Apply(batch);
             }
             catch (Exception e)
             {
                 MyLog.Default.WriteLine("SentisRender: a message from the server was not read: " + e.Message);
             }
+        }
+
+        private static long NewToken()
+        {
+            var token = BitConverter.ToInt64(Guid.NewGuid().ToByteArray(), 0);
+            return token != 0 ? token : 1;
         }
 
         private void Apply(ServerBatch batch)

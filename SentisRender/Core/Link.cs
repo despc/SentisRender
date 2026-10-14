@@ -55,7 +55,7 @@ namespace SentisRender
             {
                 var hello = MyAPIGateway.Utilities.SerializeFromBinary<ClientHello>(data);
                 if (hello == null) return;
-                _registry.Hello(sender, hello.Version);
+                _registry.Hello(sender, hello.Version, hello.Token);
                 if (hello.Version != RenderNet.Version)
                     Log.Warn($"SentisRender: the client mod of {sender} speaks version {hello.Version}, the plugin {RenderNet.Version}");
                 else if (_config().DiagnosticLogs)

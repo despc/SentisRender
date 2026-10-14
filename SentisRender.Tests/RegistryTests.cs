@@ -11,6 +11,8 @@ namespace SentisRender.Tests
     {
         private static readonly DateTime T0 = new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc);
 
+        private static long TokenOf(ulong steamId) => 1000 + (long)steamId;
+
         private static Viewer Player(ulong steamId, double x = 0, long faction = 0, bool body = true) =>
             new Viewer { SteamId = steamId, IdentityId = (long)steamId * 10, FactionId = faction, Position = new Vector3D(x, 0, 0), HasPosition = body };
 
@@ -44,7 +46,7 @@ namespace SentisRender.Tests
             var registry = new Registry();
             registry.Upsert(Sphere("a"));
             registry.Upsert(Sphere("b"));
-            registry.Hello(1, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
             var outgoing = registry.Collect(new[] { Player(1) }, T0);
             var batch = For(outgoing, 1).Single();
             Assert.True(batch.Reset);
@@ -55,7 +57,7 @@ namespace SentisRender.Tests
         public void An_empty_world_still_answers_a_hello_with_a_reset()
         {
             var registry = new Registry();
-            registry.Hello(1, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
             Assert.True(For(registry.Collect(new[] { Player(1) }, T0), 1).Single().Reset);
         }
 
@@ -64,7 +66,7 @@ namespace SentisRender.Tests
         {
             var registry = new Registry();
             registry.Upsert(Sphere("a"));
-            registry.Hello(1, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
             registry.Collect(new[] { Player(1) }, T0);
             Assert.False(registry.Due(T0.AddMilliseconds(500)));
             Assert.True(registry.Due(T0.AddSeconds(1)));
@@ -80,7 +82,7 @@ namespace SentisRender.Tests
             var registry = new Registry();
             registry.Upsert(Sphere("a"));
             registry.Upsert(Sphere("b"));
-            registry.Hello(1, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
             registry.Collect(new[] { Player(1) }, T0);
 
             Assert.True(registry.Change("a", d => d.Color = 99));
@@ -99,7 +101,7 @@ namespace SentisRender.Tests
             registry.Upsert(Sphere("zone:1"));
             registry.Upsert(Sphere("zone:2"));
             registry.Upsert(Sphere("other"));
-            registry.Hello(1, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
             registry.Collect(new[] { Player(1) }, T0);
 
             Assert.Equal(2, registry.ClearPrefix("zone:"));
@@ -113,7 +115,7 @@ namespace SentisRender.Tests
             var registry = new Registry();
             registry.Upsert(Sphere("zone"));
             registry.SetAudience("zone", Audience.Near(Vector3D.Zero, 1000));
-            registry.Hello(1, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
 
             Assert.Empty(Upserted(registry.Collect(new[] { Player(1, x: 5000) }, T0), 1));
             Assert.Equal(new[] { "zone" }, Upserted(registry.Collect(new[] { Player(1, x: 500) }, T0.AddSeconds(1)), 1));
@@ -126,8 +128,8 @@ namespace SentisRender.Tests
             var registry = new Registry();
             registry.Upsert(Sphere("base"));
             registry.SetAudience("base", Audience.Faction(7));
-            registry.Hello(1, RenderNet.Version);
-            registry.Hello(2, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
+            registry.Hello(2, RenderNet.Version, TokenOf(2));
             var outgoing = registry.Collect(new[] { Player(1, faction: 7), Player(2, faction: 8) }, T0);
             Assert.Equal(new[] { "base" }, Upserted(outgoing, 1));
             Assert.Empty(Upserted(outgoing, 2));
@@ -139,7 +141,7 @@ namespace SentisRender.Tests
             var registry = new Registry();
             registry.Upsert(Sphere("beam"));
             registry.SetExpiry("beam", T0.AddSeconds(3));
-            registry.Hello(1, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
 
             var sent = For(registry.Collect(new[] { Player(1) }, T0.AddSeconds(1)), 1).Single().Upserts.Single();
             Assert.Equal(2000, sent.LifetimeMs);
@@ -153,7 +155,7 @@ namespace SentisRender.Tests
         {
             var registry = new Registry();
             for (var i = 0; i < Registry.MaxUpsertsPerBatch * 2 + 5; i++) registry.Upsert(Sphere("s" + i));
-            registry.Hello(1, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
             var batches = For(registry.Collect(new[] { Player(1) }, T0), 1);
             Assert.Equal(3, batches.Count);
             Assert.True(batches[0].Reset);
@@ -166,9 +168,9 @@ namespace SentisRender.Tests
         {
             var registry = new Registry();
             registry.Upsert(Sphere("a"));
-            registry.Hello(1, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
             registry.Collect(new[] { Player(1) }, T0);
-            registry.Hello(1, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
             var batch = For(registry.Collect(new[] { Player(1) }, T0.AddMilliseconds(16)), 1).Single();
             Assert.True(batch.Reset);
             Assert.Equal("a", batch.Upserts.Single().Id);
@@ -178,8 +180,8 @@ namespace SentisRender.Tests
         public void A_notice_goes_to_its_audience_only()
         {
             var registry = new Registry();
-            registry.Hello(1, RenderNet.Version);
-            registry.Hello(2, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
+            registry.Hello(2, RenderNet.Version, TokenOf(2));
             registry.Collect(new[] { Player(1), Player(2) }, T0);
             registry.Notice(Audience.Player(2), new NoticeData { Id = "p", Text = "45%", Ms = 1000 });
             var outgoing = registry.Collect(new[] { Player(1), Player(2) }, T0.AddMilliseconds(16));
@@ -195,8 +197,8 @@ namespace SentisRender.Tests
             registry.Upsert(Sphere("a"));
             registry.SetAudience("a", Audience.Player(1));
             registry.Upsert(Sphere("a", radius: 20));
-            registry.Hello(1, RenderNet.Version);
-            registry.Hello(2, RenderNet.Version);
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
+            registry.Hello(2, RenderNet.Version, TokenOf(2));
             var outgoing = registry.Collect(new[] { Player(1), Player(2) }, T0);
             Assert.Equal(new[] { "a" }, Upserted(outgoing, 1));
             Assert.Empty(Upserted(outgoing, 2));
@@ -204,6 +206,22 @@ namespace SentisRender.Tests
             registry.Left(1);
             registry.Change("a", d => d.Radius = 30);
             Assert.Empty(registry.Collect(new[] { Player(2) }, T0.AddSeconds(1)).Batches);
+        }
+    
+        [Fact]
+        public void Every_batch_carries_the_token_of_its_clients_hello()
+        {
+            var registry = new Registry();
+            for (var i = 0; i < Registry.MaxUpsertsPerBatch + 3; i++) registry.Upsert(Sphere("s" + i));
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
+            registry.Hello(2, RenderNet.Version, TokenOf(2));
+            var outgoing = registry.Collect(new[] { Player(1), Player(2) }, T0);
+            Assert.Equal(2, For(outgoing, 1).Count);
+            Assert.All(For(outgoing, 1), b => Assert.Equal(TokenOf(1), b.Token));
+            Assert.All(For(outgoing, 2), b => Assert.Equal(TokenOf(2), b.Token));
+
+            registry.Hello(1, RenderNet.Version, 777);
+            Assert.All(For(registry.Collect(new[] { Player(1) }, T0.AddSeconds(1)), 1), b => Assert.Equal(777, b.Token));
         }
     }
 }
