@@ -121,7 +121,8 @@ namespace SentisRender
         public ShapeHandle Orientation(Vector3 forward, Vector3 up) => Change(d => { d.Forward = forward; d.Up = up; });
         /// <summary>
         /// The shape turns about an axis through its center, <paramref name="degreesPerSecond"/> (negative: the other
-        /// way; 0 stops it). No axis: the shape's own up (a cylinder, a capsule or a line: its from-to). The client turns
+        /// way; 0 stops it). No axis: a sphere turns about its poles (they lie on its forward, see <see cref="Orientation"/>;
+        /// the world's Z when it has none), another shape about its own up (a cylinder, a capsule or a line: its from-to). The client turns
         /// it every frame, nothing more is sent; each client starts the turn when it gets the shape.
         /// </summary>
         public ShapeHandle Spin(float degreesPerSecond, Vector3? axis = null) =>

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SentisRender.Net;
+using VRageMath;
 
 namespace SentisRender
 {
@@ -313,7 +314,18 @@ namespace SentisRender
             if (entry.ExpiresUtc.HasValue)
                 data.LifetimeMs = (int)Math.Max(1, Math.Min(int.MaxValue, (entry.ExpiresUtc.Value - now).TotalMilliseconds));
             if (data.Style == ShapeStyle.SolidAndWire && data.WireColor == 0) data.WireColor = DefaultWireColor(data.Color);
+            if (data.Kind == ShapeKind.Sphere && data.SpinSpeed != 0 && data.SpinAxis.LengthSquared() == 0) data.SpinAxis = PolarAxis(data);
             return data;
+        }
+
+        /// <summary>
+        /// The axis through a sphere's poles. The game builds a sphere's wire about its local Z: the poles are on its
+        /// forward (Orientation), or on the world's Z when it has none. A sphere spun with no axis turns about them.
+        /// </summary>
+        internal static Vector3 PolarAxis(ShapeData sphere)
+        {
+            var forward = sphere.Forward;
+            return forward.LengthSquared() > 0 && sphere.Up.LengthSquared() > 0 ? Vector3.Normalize(forward) : Vector3.Forward;
         }
 
         /// <summary>

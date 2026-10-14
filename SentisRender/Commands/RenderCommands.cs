@@ -129,7 +129,7 @@ namespace SentisRender.Commands
             Render.Shape(id).Color(Paint(color, alpha));
         }
 
-        [Command("spin", "!render spin <id|kind> <degrees a second> [x y z of the axis, 0 0 0: the shape's own up]: turns a shape (0 stops it).")]
+        [Command("spin", "!render spin <id|kind> <degrees a second> [x y z of the axis, 0 0 0: a sphere's poles, another shape's own up]: turns a shape (0 stops it).")]
         [Permission(MyPromoteLevel.Admin)]
         public void Spin(string id, float degreesPerSecond, float x = 0, float y = 0, float z = 0)
         {
@@ -144,7 +144,7 @@ namespace SentisRender.Commands
             Context.Respond($"{id}: {degreesPerSecond} degrees a second.");
         }
 
-        [Command("turn", "!render turn <id|kind>: stands a sphere, a box or a point the way you look.")]
+        [Command("turn", "!render turn <id|kind>: stands a sphere, a box or a point the way you look (a sphere's poles: where you look).")]
         [Permission(MyPromoteLevel.Admin)]
         public void Turn(string id)
         {

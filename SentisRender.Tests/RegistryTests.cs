@@ -242,5 +242,22 @@ namespace SentisRender.Tests
             Assert.Equal(0u, sent["wire"].WireColor);
             Assert.Equal(0u, registry.Get("both").WireColor);
         }
+    
+        [Fact]
+        public void A_sphere_spun_with_no_axis_turns_about_its_poles()
+        {
+            var registry = new Registry();
+            registry.Upsert(new ShapeData { Id = "plain", Kind = ShapeKind.Sphere, Radius = 10, SpinSpeed = 30 });
+            registry.Upsert(new ShapeData { Id = "turned", Kind = ShapeKind.Sphere, Radius = 10, SpinSpeed = 30, Forward = new Vector3(0, 2, 0), Up = Vector3.Right });
+            registry.Upsert(new ShapeData { Id = "axis", Kind = ShapeKind.Sphere, Radius = 10, SpinSpeed = 30, SpinAxis = Vector3.Up });
+            registry.Upsert(new ShapeData { Id = "box", Kind = ShapeKind.Box, Size = Vector3.One, SpinSpeed = 30 });
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
+            var sent = For(registry.Collect(new[] { Player(1) }, T0), 1).Single().Upserts.ToDictionary(u => u.Id);
+
+            Assert.Equal(Vector3.Forward, sent["plain"].SpinAxis);
+            Assert.Equal(new Vector3(0, 1, 0), sent["turned"].SpinAxis);
+            Assert.Equal(Vector3.Up, sent["axis"].SpinAxis);
+            Assert.Equal(Vector3.Zero, sent["box"].SpinAxis);
+        }
     }
 }
