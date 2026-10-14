@@ -312,7 +312,19 @@ namespace SentisRender
             var data = entry.Data.Clone();
             if (entry.ExpiresUtc.HasValue)
                 data.LifetimeMs = (int)Math.Max(1, Math.Min(int.MaxValue, (entry.ExpiresUtc.Value - now).TotalMilliseconds));
+            if (data.Style == ShapeStyle.SolidAndWire && data.WireColor == 0) data.WireColor = DefaultWireColor(data.Color);
             return data;
+        }
+
+        /// <summary>
+        /// The wire of a shape drawn solid and wire without a wire color of its own: the shape's color, half as
+        /// see-through (alpha 80 of 255 gives 168: the edge stands out on the faces).
+        /// </summary>
+        internal static uint DefaultWireColor(uint color)
+        {
+            var c = RenderNet.Unpack(color);
+            c.A = (byte)(255 - (255 - c.A) / 2);
+            return Math.Max(1u, RenderNet.Pack(c));
         }
     }
 }

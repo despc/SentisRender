@@ -223,5 +223,24 @@ namespace SentisRender.Tests
             registry.Hello(1, RenderNet.Version, 777);
             Assert.All(For(registry.Collect(new[] { Player(1) }, T0.AddSeconds(1)), 1), b => Assert.Equal(777, b.Token));
         }
+    
+        [Fact]
+        public void A_solid_and_wire_shape_without_a_wire_color_gets_one_half_as_see_through()
+        {
+            var registry = new Registry();
+            var color = new Color(40, 220, 60, 80);
+            registry.Upsert(new ShapeData { Id = "both", Kind = ShapeKind.Sphere, Radius = 10, Style = ShapeStyle.SolidAndWire, Color = RenderNet.Pack(color) });
+            registry.Upsert(new ShapeData { Id = "own", Kind = ShapeKind.Sphere, Radius = 10, Style = ShapeStyle.SolidAndWire, Color = RenderNet.Pack(color), WireColor = 5 });
+            registry.Upsert(new ShapeData { Id = "wire", Kind = ShapeKind.Sphere, Radius = 10, Style = ShapeStyle.Wire, Color = RenderNet.Pack(color) });
+            registry.Hello(1, RenderNet.Version, TokenOf(1));
+            var sent = For(registry.Collect(new[] { Player(1) }, T0), 1).Single().Upserts.ToDictionary(u => u.Id);
+
+            var wire = RenderNet.Unpack(sent["both"].WireColor);
+            Assert.Equal(168, wire.A);
+            Assert.Equal(new[] { 40, 220, 60 }, new[] { (int)wire.R, wire.G, wire.B });
+            Assert.Equal(5u, sent["own"].WireColor);
+            Assert.Equal(0u, sent["wire"].WireColor);
+            Assert.Equal(0u, registry.Get("both").WireColor);
+        }
     }
 }
