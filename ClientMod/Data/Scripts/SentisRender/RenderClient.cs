@@ -313,6 +313,8 @@ namespace SentisRender.Client
             }
             else
             {
+                // the HUD copies the text when the notification is added: a shown one is re-added to show a new text
+                if (note.Text != n.Text || note.Font != font) note.Hide();
                 note.Text = n.Text;
                 note.Font = font;
                 note.AliveTime = ms;
