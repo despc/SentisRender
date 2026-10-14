@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<PluginManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Name>SentisRender</Name>
+    <Guid>ce9f9500-2952-4b59-9a14-d03884ae8cb0</Guid>
+    <Repository>None</Repository>
+    <Version>v1.0.0</Version>
+</PluginManifest>
