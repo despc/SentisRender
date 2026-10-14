@@ -15,6 +15,13 @@ namespace SentisRender.Net
         /// <summary>Bumped when a change needs both sides updated; an older peer is logged, not refused.</summary>
         public const int Version = 1;
 
+        /// <summary>
+        /// The most segments a sphere, capsule or cylinder is drawn with: the game steps a sphere by 360 / n whole
+        /// degrees (over 360 it never ends) and draws about n*n/2 faces. Divisors of 360 come out even: 12, 18, 20,
+        /// 24, 30, 36, 40, 45, 60, 72, 90.
+        /// </summary>
+        public const int MaxDetail = 90;
+
         /// <summary>A color as one number: R in the low byte, then G, B, A.</summary>
         public static uint Pack(Color c)
         {
@@ -95,7 +102,7 @@ namespace SentisRender.Net
         [ProtoMember(24)] public int LifetimeMs;
         /// <summary>Not drawn farther than this from the camera; 0 is always.</summary>
         [ProtoMember(25)] public float DrawDistance;
-        /// <summary>Segments of a sphere's or cylinder's wire; 0 is the client's default.</summary>
+        /// <summary>Segments of a sphere, capsule or cylinder, up to RenderNet.MaxDetail; 0 is the client's default (20, 12, 24).</summary>
         [ProtoMember(26)] public int Detail;
         /// <summary>Brightness of the faces and lines; 0 is 1.</summary>
         [ProtoMember(27)] public float Intensity;

@@ -120,8 +120,12 @@ namespace SentisRender
         public ShapeHandle Material(string material) => Change(d => d.Material = material);
         /// <summary>Not drawn farther than this from the camera; 0 is always.</summary>
         public ShapeHandle DrawDistance(float metres) => Change(d => d.DrawDistance = metres);
-        /// <summary>Segments of a sphere's or a cylinder's wire; 0 is the client's default.</summary>
-        public ShapeHandle Detail(int segments) => Change(d => d.Detail = segments);
+        /// <summary>
+        /// Segments of a sphere, a capsule or a cylinder, 4..<see cref="RenderNet.MaxDetail"/>; 0 is the client's default
+        /// (20 for a sphere). A sphere of n is about n*n/2 faces a frame; divisors of 360 come out even (24, 36, 40, 60).
+        /// </summary>
+        public ShapeHandle Detail(int segments) =>
+            Change(d => d.Detail = segments <= 0 ? 0 : Math.Max(4, Math.Min(RenderNet.MaxDetail, segments)));
         public ShapeHandle Intensity(float intensity) => Change(d => d.Intensity = intensity);
         /// <summary>Additive blending: the shape glows (lasers, energy).</summary>
         public ShapeHandle Additive(bool additive = true) => Change(d => d.Additive = additive);

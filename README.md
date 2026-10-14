@@ -51,7 +51,7 @@
 | Команда | Что делает |
 |---|---|
 | `!render status` | сколько фигур, сколько клиентов с модом, сколько отправлено; список ids |
-| `!render sphere [радиус=50] [цвет=green] [solid\|wire\|both] [прозрачность=80]` | сфера вокруг вас |
+| `!render sphere [радиус=50] [цвет=green] [solid\|wire\|both] [прозрачность=80] [деления=0]` | сфера вокруг вас; деления 4..90, 0 — 20 |
 | `!render box [полуразмер=10] [цвет=cyan] [solid\|wire\|both] [прозрачность=80]` | куб вокруг вас, повёрнут как вы |
 | `!render cylinder [длина=50] [радиус=5] [цвет=yellow]` | цилиндр из линий вверх от вас |
 | `!render capsule [длина=20] [радиус=3] [цвет=purple] [прозрачность=100]` | капсула вверх от вас |
@@ -97,7 +97,8 @@ Render.Clear("zone:");
 - **Фигуры:** `Sphere`, `Box`, `Cylinder`, `Capsule`, `Line`, `Point`, `Marker`.
 - **Свойства:** `Color`, `Position`, `To`, `Radius`, `HalfSize`, `Orientation`, `Text`, `Style` (`Solid`, `Wire`,
   `SolidAndWire`), `Thickness`, `Material` (прозрачный материал игры: `Square`, `WeaponLaser`,
-  `SafeZoneShield_Material`, `GizmoDrawLine`…), `DrawDistance`, `Detail`, `Intensity`, `Additive`, `Lifetime`,
+  `SafeZoneShield_Material`, `GizmoDrawLine`…), `DrawDistance`, `Detail` (деления сферы, капсулы, цилиндра: 4..90;
+  сфера из n делений — около n²/2 полигонов за кадр, ровно выходят делители 360),  `Intensity`, `Additive`, `Lifetime`,
   `ShowTo`, `Remove`.
 - **Кому видно:** `Audience.All` (по умолчанию), `Player(steamId)`, `Players(...)`, `Faction(factionId)`,
   `Near(center, range)` и `.Within(center, range)` к любому из них.

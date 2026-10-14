@@ -47,13 +47,13 @@ namespace SentisRender.Commands
             if (ids.Count > 0) Context.Respond("Ids: " + string.Join(", ", ids.Count > 30 ? ids.GetRange(0, 30) : ids) + (ids.Count > 30 ? ", ..." : ""));
         }
 
-        [Command("sphere", "!render sphere [radius=50] [color=green] [solid|wire|both] [alpha=80]: a sphere around you.")]
+        [Command("sphere", "!render sphere [radius=50] [color=green] [solid|wire|both] [alpha=80] [segments=0]: a sphere around you (segments 4..90, 0: 20).")]
         [Permission(MyPromoteLevel.Admin)]
-        public void Sphere(float radius = 50, string color = "green", string style = "solid", int alpha = 80)
+        public void Sphere(float radius = 50, string color = "green", string style = "solid", int alpha = 80, int segments = 0)
         {
             if (!Here(out var at, out _, out _)) return;
             var id = NewId("sphere");
-            Render.Sphere(id, at, radius, Paint(color, alpha), StyleOf(style));
+            Render.Sphere(id, at, radius, Paint(color, alpha), StyleOf(style)).Detail(segments);
             Context.Respond($"{id}: sphere of {radius} m at you.");
         }
 

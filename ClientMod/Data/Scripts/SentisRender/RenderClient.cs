@@ -284,6 +284,16 @@ namespace SentisRender.Client
             foreach (var id in _drop) Remove(id);
         }
 
+        /// <summary>
+        /// Segments of a sphere, capsule or cylinder. The game steps a sphere by 360 / n whole degrees: over 360 the step
+        /// is 0 and its loop never ends (the client hangs), and n*n/2 faces a frame grow fast; so 4..90, 0 the default.
+        /// </summary>
+        private static int Segments(int detail, int fallback)
+        {
+            if (detail <= 0) return fallback;
+            return detail < 4 ? 4 : detail > RenderNet.MaxDetail ? RenderNet.MaxDetail : detail;
+        }
+
         private static void DrawOne(Live live)
         {
             var d = live.Data;
@@ -298,7 +308,7 @@ namespace SentisRender.Client
                 {
                     var thickness = d.Thickness > 0 ? d.Thickness : Math.Max(0.05f, d.Radius / 500f);
                     MySimpleObjectDraw.DrawTransparentSphere(ref live.Matrix, d.Radius, ref live.Color, rasterizer,
-                        d.Detail > 0 ? d.Detail : 20, live.Face, live.Wire, thickness, -1, null, blend, intensity);
+                        Segments(d.Detail, 20), live.Face, live.Wire, thickness, -1, null, blend, intensity);
                     break;
                 }
                 case ShapeKind.Box:
@@ -314,12 +324,12 @@ namespace SentisRender.Client
                 {
                     var thickness = d.Thickness > 0 ? d.Thickness : Math.Max(0.02f, d.Radius / 100f);
                     MySimpleObjectDraw.DrawTransparentCylinder(ref live.Matrix, d.Radius, d.Radius, live.Length, ref live.Color4,
-                        true, d.Detail > 0 ? d.Detail : 24, thickness, live.Wire);
+                        true, Segments(d.Detail, 24), thickness, live.Wire);
                     break;
                 }
                 case ShapeKind.Capsule:
                     MySimpleObjectDraw.DrawTransparentCapsule(ref live.Matrix, d.Radius, live.Length, ref live.Color,
-                        d.Detail > 0 ? d.Detail : 12, live.Face, -1, blend);
+                        Segments(d.Detail, 12), live.Face, -1, blend);
                     break;
                 case ShapeKind.Line:
                     MyTransparentGeometry.AddLineBillboard(live.Wire, live.Color4, d.Position, live.Direction, live.Length,
