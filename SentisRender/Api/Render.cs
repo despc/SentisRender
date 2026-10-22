@@ -68,6 +68,8 @@ namespace SentisRender
         public static void Notify(Audience audience, string text, int ms = 2000, string font = "White", string id = null) =>
             Registry.Notice(audience, new NoticeData { Id = id, Text = text, Ms = ms, Font = font });
 
+        // not inlined: SentisTranslator puts a prefix on it (a player's line in their language)
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         public static void Notify(ulong steamId, string text, int ms = 2000, string font = "White", string id = null) =>
             Notify(Audience.Player(steamId), text, ms, font, id);
 
